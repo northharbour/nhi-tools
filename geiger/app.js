@@ -7,6 +7,7 @@ class GeigerCounter {
         this.analyser = null;
         this.microphone = null;
         this.bandpassFilter = null;
+        this.bandpassFilter2 = null;
         this.gainNode = null;
         this.scriptProcessor = null;
         this.uiUpdateInterval = null;
@@ -15,7 +16,7 @@ class GeigerCounter {
         // Detection parameters
         this.targetFrequency = 4266; // Hz
         this.sensitivity = 0.3; // 0-1
-        this.bandWidth = 400; // Hz total bandwidth of the bandpass filter
+        this.bandWidth = 300; // Hz total bandwidth of the bandpass filter
 
         // Counter state
         this.counts = 0;
@@ -32,6 +33,8 @@ class GeigerCounter {
         this.inPulse = false;
         this.samplesSinceLastPulse = 0;
         this.minPulseSamples = 0;
+        this.samplesAboveThreshold = 0;
+        this.minPulseDuration = 0; // set from sampleRate in start()
 
         // Visualization buffer (latest filtered signal snapshot)
         this.vizBuffer = new Float32Array(512);
@@ -133,16 +136,23 @@ class GeigerCounter {
             const sampleRate = this.audioContext.sampleRate;
 
             // === Audio Graph ===
-            // Mic → BandpassFilter → Gain(50x) → ScriptProcessor → (silence)
+            // Mic → Bandpass1 → Bandpass2 → Gain(30x) → ScriptProcessor → (silence)
+            // Cascaded bandpass = 4th-order (~24dB/oct rolloff) for sharp rejection
             // Mic → Analyser (for frequency viz)
 
             this.microphone = this.audioContext.createMediaStreamSource(stream);
 
-            // Bandpass filter centered on target frequency
+            // First bandpass filter centered on target frequency
             this.bandpassFilter = this.audioContext.createBiquadFilter();
             this.bandpassFilter.type = 'bandpass';
             this.bandpassFilter.frequency.value = this.targetFrequency;
             this.bandpassFilter.Q.value = this.targetFrequency / this.bandWidth;
+
+            // Second bandpass filter (cascaded for steeper rolloff)
+            this.bandpassFilter2 = this.audioContext.createBiquadFilter();
+            this.bandpassFilter2.type = 'bandpass';
+            this.bandpassFilter2.frequency.value = this.targetFrequency;
+            this.bandpassFilter2.Q.value = this.targetFrequency / this.bandWidth;
 
             // Gain stage: amplify the filtered signal so thresholds are usable
             this.gainNode = this.audioContext.createGain();
@@ -165,6 +175,10 @@ class GeigerCounter {
             // Minimum gap between pulses: ~0.5ms
             this.minPulseSamples = Math.round(sampleRate * 0.0005);
 
+            // Minimum pulse duration: envelope must stay above threshold for ~1ms
+            // This rejects broadband impulses (claps, clicks) whose 4kHz component decays in <0.5ms
+            this.minPulseDuration = Math.round(sampleRate * 0.001);
+
             this.scriptProcessor.onaudioprocess = (e) => {
                 const input = e.inputBuffer.getChannelData(0);
                 const output = e.outputBuffer.getChannelData(0);
@@ -173,9 +187,10 @@ class GeigerCounter {
                 for (let i = 0; i < output.length; i++) output[i] = 0;
             };
 
-            // Wire up: Mic → Bandpass → Gain → ScriptProcessor → destination
+            // Wire up: Mic → Bandpass1 → Bandpass2 → Gain → ScriptProcessor → destination
             this.microphone.connect(this.bandpassFilter);
-            this.bandpassFilter.connect(this.gainNode);
+            this.bandpassFilter.connect(this.bandpassFilter2);
+            this.bandpassFilter2.connect(this.gainNode);
             this.gainNode.connect(this.scriptProcessor);
             this.scriptProcessor.connect(this.audioContext.destination);
 
@@ -189,6 +204,7 @@ class GeigerCounter {
             this.envelope = 0;
             this.inPulse = false;
             this.samplesSinceLastPulse = 9999;
+            this.samplesAboveThreshold = 0;
 
             this.updateUI();
 
@@ -216,6 +232,10 @@ class GeigerCounter {
             this.gainNode.disconnect();
             this.gainNode = null;
         }
+        if (this.bandpassFilter2) {
+            this.bandpassFilter2.disconnect();
+            this.bandpassFilter2 = null;
+        }
         if (this.bandpassFilter) {
             this.bandpassFilter.disconnect();
             this.bandpassFilter = null;
@@ -240,6 +260,7 @@ class GeigerCounter {
         this.envelope = 0;
         this.inPulse = false;
         this.samplesSinceLastPulse = 9999;
+        this.samplesAboveThreshold = 0;
         this.updateDisplay();
         this.setStatus('Counter reset', 'ready');
     }
@@ -247,7 +268,7 @@ class GeigerCounter {
     // === CORE DETECTION: runs at full sample rate (~48kHz) ===
     processFilteredAudio(input) {
         // Threshold: sensitivity maps to a range
-        // After bandpass + 50x gain, signal is in a usable range
+        // After cascaded bandpass + 30x gain, signal is in a usable range
         // High sensitivity (1.0) = low threshold; Low sensitivity (0.0) = high threshold
         const threshold = 0.02 + (1.0 - this.sensitivity) * 0.18;
         const hysteresisLow = threshold * 0.35;
@@ -283,8 +304,16 @@ class GeigerCounter {
 
             this.samplesSinceLastPulse++;
 
-            // State machine: detect rising edge (entering pulse)
-            if (!this.inPulse && this.envelope > threshold && this.samplesSinceLastPulse > this.minPulseSamples) {
+            // Track how long the envelope has been above threshold
+            if (this.envelope > threshold) {
+                this.samplesAboveThreshold++;
+            } else if (this.envelope < hysteresisLow) {
+                this.samplesAboveThreshold = 0;
+            }
+
+            // State machine: detect rising edge, but only count after sustained duration
+            // This rejects broadband impulses (claps/clicks) whose 4kHz component is too brief
+            if (!this.inPulse && this.samplesAboveThreshold >= this.minPulseDuration && this.samplesSinceLastPulse > this.minPulseSamples) {
                 this.inPulse = true;
                 this.counts++;
                 this.countsInWindow.push(Date.now());
