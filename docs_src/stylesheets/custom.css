@@ -1,11 +1,31 @@
 :root {
-    --md-primary-fg-color: #FFA300;
-    --md-primary-bg-color: #46493C;
+    --md-primary-fg-color: #46493C;
+    --md-primary-bg-color: #F6EDDD;
     --md-accent-fg-color: #FFA300;
 }
 
 [data-md-color-scheme="slate"] {
+    --md-primary-fg-color: #3a3d32;
+    --md-primary-bg-color: #F6EDDD;
     --md-default-bg-color: #2a2c24;
     --md-default-fg-color: #F6EDDD;
     --md-default-fg-color--light: #b8b0a0;
+}
+
+/* Header bar: dark bg with cream text */
+.md-header {
+    background-color: #3a3d32;
+}
+
+/* Tabs bar */
+.md-tabs {
+    background-color: #2a2c24;
+}
+
+/* Links and highlights in amber */
+.md-typeset a {
+    color: #FFA300;
+}
+.md-typeset a:hover {
+    color: #F6EDDD;
 }
