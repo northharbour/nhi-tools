@@ -1,31 +1,56 @@
 :root {
-    --md-primary-fg-color: #46493C;
+    --md-primary-fg-color: #272a1e;
     --md-primary-bg-color: #F6EDDD;
     --md-accent-fg-color: #FFA300;
 }
 
 [data-md-color-scheme="slate"] {
-    --md-primary-fg-color: #3a3d32;
+    --md-primary-fg-color: #272a1e;
     --md-primary-bg-color: #F6EDDD;
-    --md-default-bg-color: #2a2c24;
+    --md-default-bg-color: #46493C;
     --md-default-fg-color: #F6EDDD;
     --md-default-fg-color--light: #b8b0a0;
+    --md-code-bg-color: #3a3d32;
+    --md-code-fg-color: #F6EDDD;
+    --md-typeset-color: #F6EDDD;
+    --md-footer-bg-color: #272a1e;
+    --md-footer-fg-color: #b8b0a0;
 }
 
-/* Header bar: dark bg with cream text */
+/* Header bar: very dark olive to match NHI site nav */
 .md-header {
-    background-color: #3a3d32;
+    background-color: #272a1e;
 }
 
 /* Tabs bar */
 .md-tabs {
-    background-color: #2a2c24;
+    background-color: #333528;
 }
 
-/* Links and highlights in amber */
+/* Sidebar */
+.md-sidebar {
+    background-color: #3a3d32;
+}
+
+/* Links in amber */
 .md-typeset a {
     color: #FFA300;
 }
 .md-typeset a:hover {
     color: #F6EDDD;
+}
+
+/* Nav items */
+.md-nav__link:hover {
+    color: #FFA300;
+}
+
+/* Search */
+.md-search__input {
+    background-color: #3a3d32;
+}
+
+/* Content cards/admonitions */
+.md-typeset .admonition {
+    border-color: #FFA300;
 }
