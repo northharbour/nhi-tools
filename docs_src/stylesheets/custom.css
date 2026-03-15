@@ -27,9 +27,9 @@
     background-color: #333528;
 }
 
-/* Sidebar */
+/* Sidebar - blend with page */
 .md-sidebar {
-    background-color: #3a3d32;
+    background-color: transparent;
 }
 
 /* Links in amber */
