@@ -62,8 +62,25 @@ class GeigerCounter {
     }
 
     init() {
+        this.resizeCanvas();
+        window.addEventListener('resize', () => {
+            this.resizeCanvas();
+            if (!this.isListening) this.drawCanvas();
+        });
         this.attachEventListeners();
         this.drawCanvas();
+    }
+
+    resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = this.canvas.getBoundingClientRect();
+        const w = rect.width || 300;
+        const h = rect.height || 150;
+        this.canvas.width = Math.round(w * dpr);
+        this.canvas.height = Math.round(h * dpr);
+        this.canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        this.cssWidth = w;
+        this.cssHeight = h;
     }
 
     attachEventListeners() {
@@ -235,14 +252,17 @@ class GeigerCounter {
         const threshold = 0.02 + (1.0 - this.sensitivity) * 0.18;
         const hysteresisLow = threshold * 0.35;
 
-        // Copy to viz buffer
+        // Scroll viz buffer: shift old data left, append new samples on right
         const vizLen = this.vizBuffer.length;
         const inputLen = input.length;
-        if (inputLen <= vizLen) {
-            this.vizBuffer.set(input);
-        } else {
+        if (inputLen >= vizLen) {
             this.vizBuffer.set(input.subarray(inputLen - vizLen));
+        } else {
+            this.vizBuffer.copyWithin(0, inputLen);
+            this.vizBuffer.set(input, vizLen - inputLen);
         }
+        // Shift envelope buffer left (filled during detection loop below)
+        this.vizEnvelopeBuffer.copyWithin(0, inputLen);
         this.vizThreshold = threshold;
 
         for (let i = 0; i < inputLen; i++) {
@@ -255,9 +275,10 @@ class GeigerCounter {
                 this.envelope = this.releaseCoeff * this.envelope + (1 - this.releaseCoeff) * sample;
             }
 
-            // Store envelope for visualization
-            if (i < vizLen) {
-                this.vizEnvelopeBuffer[i] = this.envelope;
+            // Store envelope for visualization (scrolled position)
+            const envIdx = vizLen - inputLen + i;
+            if (envIdx >= 0 && envIdx < vizLen) {
+                this.vizEnvelopeBuffer[envIdx] = this.envelope;
             }
 
             this.samplesSinceLastPulse++;
@@ -333,8 +354,8 @@ class GeigerCounter {
 
     // Draw the bandpass-filtered signal + envelope + threshold
     drawFilteredSignal() {
-        const width = this.canvas.width;
-        const height = this.canvas.height;
+        const width = this.cssWidth;
+        const height = this.cssHeight;
 
         // Clear
         this.canvasCtx.fillStyle = 'rgba(42, 44, 36, 0.85)';
@@ -434,8 +455,8 @@ class GeigerCounter {
     }
 
     drawCanvas() {
-        const width = this.canvas.width;
-        const height = this.canvas.height;
+        const width = this.cssWidth;
+        const height = this.cssHeight;
 
         this.canvasCtx.fillStyle = 'rgba(42, 44, 36, 0.8)';
         this.canvasCtx.fillRect(0, 0, width, height);
