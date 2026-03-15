@@ -3,149 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Audio-based Geiger Counter for detecting 4kHz radiation detector beeps">
-    <meta name="theme-color" content="#46493C">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Geiger Counter">
-    
-    <title>Geiger Counter PWA</title>
-    <link rel="manifest" href="manifest.json">
+    <title>NHI Tools - North Harbour Instruments</title>
+    <meta name="description" content="Online tools and documentation from North Harbour Instruments">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><circle cx='96' cy='96' r='50' fill='%23ff6b6b'/><text x='96' y='105' font-size='40' text-anchor='middle' fill='white' font-weight='bold'>Ω</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><circle cx='96' cy='96' r='50' fill='%23ff6b6b'/><text x='96' y='105' font-size='40' text-anchor='middle' fill='white' font-weight='bold'>Ω</text></svg>">
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: #46493C;
+            color: #F6EDDD;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+        h1 {
+            font-size: 1.8rem;
+            color: #FFA300;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            font-size: 0.75rem;
+            color: #b8b0a0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 3rem;
+        }
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            max-width: 900px;
+            width: 100%;
+        }
+        .tool-card {
+            background: #3a3d32;
+            border: 1px solid #5a5d4e;
+            border-radius: 2px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: #F6EDDD;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .tool-card:hover {
+            border-color: #FFA300;
+            box-shadow: 0 0 15px rgba(255, 163, 0, 0.2);
+        }
+        .tool-card h2 {
+            font-size: 1rem;
+            color: #FFA300;
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+        }
+        .tool-card p {
+            font-family: system-ui, sans-serif;
+            font-size: 0.85rem;
+            color: #b8b0a0;
+            line-height: 1.5;
+        }
+        .tag {
+            display: inline-block;
+            font-size: 0.6rem;
+            color: #FFA300;
+            border: 1px solid #5a5d4e;
+            padding: 0.2rem 0.5rem;
+            margin-top: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        footer {
+            margin-top: auto;
+            padding-top: 3rem;
+            font-size: 0.6rem;
+            color: #5a5d4e;
+            letter-spacing: 1px;
+        }
+        footer a { color: #b8b0a0; text-decoration: none; }
+        footer a:hover { color: #FFA300; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>☢️ Geiger Counter</h1>
-            <p class="subtitle">Audio-based Radiation Detector</p>
-        </header>
+    <h1>☢️ NHI Tools</h1>
+    <p class="subtitle">North Harbour Instruments</p>
 
-        <main>
-            <!-- Status Section -->
-            <section class="status-section">
-                <div class="status-indicator" id="statusIndicator">
-                    <span class="status-dot" id="statusDot"></span>
-                    <span id="statusText">Ready</span>
-                </div>
-                <p class="status-message" id="statusMessage"></p>
-            </section>
+    <div class="tools-grid">
+        <a href="geiger/" class="tool-card">
+            <h2>Geiger Counter PWA</h2>
+            <p>Audio-based pulse counter for Geiger-Müller detectors. Counts 4kHz beeps and displays CPS/CPM readings. Works offline, installable on iOS & Android.</p>
+            <span class="tag">PWA · Offline</span>
+        </a>
 
-            <!-- Audio Input Section -->
-            <section class="control-section">
-                <button id="startBtn" class="btn btn-primary">
-                    🎤 Start Listening
-                </button>
-                <button id="stopBtn" class="btn btn-secondary" disabled>
-                    ⏹️ Stop
-                </button>
-                <button id="resetBtn" class="btn btn-tertiary">
-                    🔄 Reset
-                </button>
-            </section>
-
-            <!-- Readings Display -->
-            <section class="readings-section">
-                <div class="reading-card">
-                    <div class="reading-label">CPS (Counts/Second)</div>
-                    <div class="reading-value" id="cpsDisplay">0.0</div>
-                </div>
-                <div class="reading-card">
-                    <div class="reading-label">CPM (Counts/Minute)</div>
-                    <div class="reading-value" id="cpmDisplay">0</div>
-                </div>
-                <div class="reading-card">
-                    <div class="reading-label">Total Clicks</div>
-                    <div class="reading-value" id="totalDisplay">0</div>
-                </div>
-            </section>
-
-            <!-- Statistics Section -->
-            <section class="stats-section">
-                <h3>Statistics</h3>
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <span class="stat-label">Peak CPS:</span>
-                        <span class="stat-value" id="peakCps">0.0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Uptime:</span>
-                        <span class="stat-value" id="uptime">0:00</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Averaging Window:</span>
-                        <span class="stat-value">1s</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Frequency Target:</span>
-                        <span class="stat-value">4 kHz</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Settings Section -->
-            <section class="settings-section">
-                <h3>Sensitivity Settings</h3>
-                <div class="setting-group">
-                    <label for="sensitivitySlider">Sensitivity:</label>
-                    <input type="range" id="sensitivitySlider" min="10" max="100" value="50" class="slider">
-                    <span id="sensitivityValue">50%</span>
-                </div>
-                <div class="setting-group">
-                    <label for="frequencyInput">Center Freq (kHz):</label>
-                    <input type="number" id="frequencyInput" min="0.5" max="20" value="4.266" step="0.01">
-                </div>
-                <div class="setting-group">
-                    <label for="beepDurationSlider">Bandpass Width (Hz):</label>
-                    <input type="range" id="beepDurationSlider" min="100" max="1000" value="400" step="50" class="slider">
-                    <span id="beepDurationValue">400 Hz</span>
-                </div>
-            </section>
-
-            <!-- Audio Visualization -->
-            <section class="visualization-section">
-                <canvas id="frequencyCanvas" width="300" height="150"></canvas>
-                <p class="canvas-label">Real-time Audio Signal</p>
-            </section>
-
-            <!-- Info Section -->
-            <section class="info-section">
-                <h3>About</h3>
-                <p>This PWA detects audio beeps from your Geiger counter. Point your device's microphone toward the speaker and adjust sensitivity as needed. The app works offline once loaded.</p>
-                <div class="feature-list">
-                    <div class="feature">✓ Works Offline</div>
-                    <div class="feature">✓ Installable App</div>
-                    <div class="feature">✓ Real-time Detection</div>
-                    <div class="feature">✓ Privacy-focused</div>
-                </div>
-            </section>
-        </main>
-
-        <footer>
-            <p>Geiger Counter PWA | No data is stored or transmitted</p>
-        </footer>
+        <!-- Add more tools/docs cards here -->
+        <!--
+        <a href="docs/" class="tool-card">
+            <h2>Documentation</h2>
+            <p>Product manuals, specifications, and setup guides for NHI instruments.</p>
+            <span class="tag">Docs</span>
+        </a>
+        -->
     </div>
 
-    <script>
-        // Register service worker for offline support
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('service-worker.js')
-                .then(reg => console.log('Service Worker registered'))
-                .catch(err => console.log('Service Worker registration failed:', err));
-        }
-
-        // Install prompt handling
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('Install prompt available');
-        });
-    </script>
-    <script src="app.js"></script>
+    <footer>
+        <a href="https://northharbourinstruments.com">northharbourinstruments.com</a>
+    </footer>
 </body>
 </html>

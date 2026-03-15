@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Audio-based Geiger Counter for detecting 4kHz radiation detector beeps">
+    <meta name="theme-color" content="#46493C">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Geiger Counter">
+    
+    <title>Geiger Counter PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><circle cx='96' cy='96' r='50' fill='%23ff6b6b'/><text x='96' y='105' font-size='40' text-anchor='middle' fill='white' font-weight='bold'>Ω</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%231a1a2e' width='192' height='192'/><circle cx='96' cy='96' r='50' fill='%23ff6b6b'/><text x='96' y='105' font-size='40' text-anchor='middle' fill='white' font-weight='bold'>Ω</text></svg>">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>☢️ Geiger Counter</h1>
+            <p class="subtitle">Audio-based Radiation Detector</p>
+        </header>
+
+        <main>
+            <!-- Status Section -->
+            <section class="status-section">
+                <div class="status-indicator" id="statusIndicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Ready</span>
+                </div>
+                <p class="status-message" id="statusMessage"></p>
+            </section>
+
+            <!-- Audio Input Section -->
+            <section class="control-section">
+                <button id="startBtn" class="btn btn-primary">
+                    🎤 Start Listening
+                </button>
+                <button id="stopBtn" class="btn btn-secondary" disabled>
+                    ⏹️ Stop
+                </button>
+                <button id="resetBtn" class="btn btn-tertiary">
+                    🔄 Reset
+                </button>
+            </section>
+
+            <!-- Readings Display -->
+            <section class="readings-section">
+                <div class="reading-card">
+                    <div class="reading-label">CPS (Counts/Second)</div>
+                    <div class="reading-value" id="cpsDisplay">0.0</div>
+                </div>
+                <div class="reading-card">
+                    <div class="reading-label">CPM (Counts/Minute)</div>
+                    <div class="reading-value" id="cpmDisplay">0</div>
+                </div>
+                <div class="reading-card">
+                    <div class="reading-label">Total Clicks</div>
+                    <div class="reading-value" id="totalDisplay">0</div>
+                </div>
+            </section>
+
+            <!-- Statistics Section -->
+            <section class="stats-section">
+                <h3>Statistics</h3>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Peak CPS:</span>
+                        <span class="stat-value" id="peakCps">0.0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Uptime:</span>
+                        <span class="stat-value" id="uptime">0:00</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Averaging Window:</span>
+                        <span class="stat-value">1s</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Frequency Target:</span>
+                        <span class="stat-value">4 kHz</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section class="settings-section">
+                <h3>Sensitivity Settings</h3>
+                <div class="setting-group">
+                    <label for="sensitivitySlider">Sensitivity:</label>
+                    <input type="range" id="sensitivitySlider" min="10" max="100" value="50" class="slider">
+                    <span id="sensitivityValue">50%</span>
+                </div>
+                <div class="setting-group">
+                    <label for="frequencyInput">Center Freq (kHz):</label>
+                    <input type="number" id="frequencyInput" min="0.5" max="20" value="4.266" step="0.01">
+                </div>
+                <div class="setting-group">
+                    <label for="beepDurationSlider">Bandpass Width (Hz):</label>
+                    <input type="range" id="beepDurationSlider" min="100" max="1000" value="400" step="50" class="slider">
+                    <span id="beepDurationValue">400 Hz</span>
+                </div>
+            </section>
+
+            <!-- Audio Visualization -->
+            <section class="visualization-section">
+                <canvas id="frequencyCanvas" width="300" height="150"></canvas>
+                <p class="canvas-label">Real-time Audio Signal</p>
+            </section>
+
+            <!-- Info Section -->
+            <section class="info-section">
+                <h3>About</h3>
+                <p>This PWA detects audio beeps from your Geiger counter. Point your device's microphone toward the speaker and adjust sensitivity as needed. The app works offline once loaded.</p>
+                <div class="feature-list">
+                    <div class="feature">✓ Works Offline</div>
+                    <div class="feature">✓ Installable App</div>
+                    <div class="feature">✓ Real-time Detection</div>
+                    <div class="feature">✓ Privacy-focused</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>Geiger Counter PWA | No data is stored or transmitted</p>
+        </footer>
+    </div>
+
+    <script>
+        // Register service worker for offline support
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed:', err));
+        }
+
+        // Install prompt handling
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('Install prompt available');
+        });
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>

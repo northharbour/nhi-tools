@@ -1,14 +1,14 @@
 // Service Worker for Offline Support
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `geiger-counter-${CACHE_VERSION}`;
 
 // Files to cache on installation
 const URLS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/app.js',
-    '/manifest.json'
+    './',
+    './index.html',
+    './style.css',
+    './app.js',
+    './manifest.json'
 ];
 
 // Installation event - cache files
