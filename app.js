@@ -7,6 +7,7 @@ class GeigerCounter {
         this.analyser = null;
         this.microphone = null;
         this.bandpassFilter = null;
+        this.gainNode = null;
         this.scriptProcessor = null;
         this.uiUpdateInterval = null;
         this.isListening = false;
@@ -115,8 +116,8 @@ class GeigerCounter {
             const sampleRate = this.audioContext.sampleRate;
 
             // === Audio Graph ===
-            // Mic → BandpassFilter → ScriptProcessor → (silence output)
-            // Mic → Analyser (for frequency viz, optional)
+            // Mic → BandpassFilter → Gain(50x) → ScriptProcessor → (silence)
+            // Mic → Analyser (for frequency viz)
 
             this.microphone = this.audioContext.createMediaStreamSource(stream);
 
@@ -126,12 +127,16 @@ class GeigerCounter {
             this.bandpassFilter.frequency.value = this.targetFrequency;
             this.bandpassFilter.Q.value = this.targetFrequency / this.bandWidth;
 
+            // Gain stage: amplify the filtered signal so thresholds are usable
+            this.gainNode = this.audioContext.createGain();
+            this.gainNode.gain.value = 50;
+
             // Analyser for optional frequency visualization
             this.analyser = this.audioContext.createAnalyser();
             this.analyser.fftSize = 1024;
             this.analyser.smoothingTimeConstant = 0.3;
 
-            // ScriptProcessor for sample-level detection after bandpass
+            // ScriptProcessor for sample-level detection after bandpass+gain
             this.scriptProcessor = this.audioContext.createScriptProcessor(256, 1, 1);
 
             // Envelope follower coefficients
@@ -151,9 +156,10 @@ class GeigerCounter {
                 for (let i = 0; i < output.length; i++) output[i] = 0;
             };
 
-            // Wire up: Mic → Bandpass → ScriptProcessor → destination
+            // Wire up: Mic → Bandpass → Gain → ScriptProcessor → destination
             this.microphone.connect(this.bandpassFilter);
-            this.bandpassFilter.connect(this.scriptProcessor);
+            this.bandpassFilter.connect(this.gainNode);
+            this.gainNode.connect(this.scriptProcessor);
             this.scriptProcessor.connect(this.audioContext.destination);
 
             // Also connect raw mic to analyser for spectrum display
@@ -189,6 +195,10 @@ class GeigerCounter {
             this.scriptProcessor.onaudioprocess = null;
             this.scriptProcessor = null;
         }
+        if (this.gainNode) {
+            this.gainNode.disconnect();
+            this.gainNode = null;
+        }
         if (this.bandpassFilter) {
             this.bandpassFilter.disconnect();
             this.bandpassFilter = null;
@@ -220,9 +230,9 @@ class GeigerCounter {
     // === CORE DETECTION: runs at full sample rate (~48kHz) ===
     processFilteredAudio(input) {
         // Threshold: sensitivity maps to a range
-        // After bandpass filtering, signal amplitude is small — keep thresholds low
+        // After bandpass + 50x gain, signal is in a usable range
         // High sensitivity (1.0) = low threshold; Low sensitivity (0.0) = high threshold
-        const threshold = 0.0005 + (1.0 - this.sensitivity) * 0.015;
+        const threshold = 0.02 + (1.0 - this.sensitivity) * 0.18;
         const hysteresisLow = threshold * 0.35;
 
         // Copy to viz buffer
