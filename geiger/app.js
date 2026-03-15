@@ -16,7 +16,7 @@ class GeigerCounter {
         // Detection parameters
         this.targetFrequency = 4266; // Hz
         this.sensitivity = 0.3; // 0-1
-        this.bandWidth = 300; // Hz total bandwidth of the bandpass filter
+        this.bandWidth = 200; // Hz total bandwidth of the bandpass filter
 
         // Counter state
         this.counts = 0;
@@ -334,10 +334,10 @@ class GeigerCounter {
         const now = Date.now();
         const elapsedSeconds = (now - this.startTime) / 1000;
 
-        // Clean old counts outside the 1-second window
-        this.countsInWindow = this.countsInWindow.filter(t => now - t < 1000);
+        // Clean old counts outside the 5-second averaging window
+        this.countsInWindow = this.countsInWindow.filter(t => now - t < 5000);
 
-        const cps = this.countsInWindow.length;
+        const cps = this.countsInWindow.length / 5;
         const cpm = elapsedSeconds > 0 ? Math.round((this.counts / elapsedSeconds) * 60) : 0;
 
         if (cps > this.peakCps) {

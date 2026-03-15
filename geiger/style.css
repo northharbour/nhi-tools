@@ -235,6 +235,8 @@ section h3 {
     text-align: center;
     transition: all 0.3s ease;
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3), 0 0 10px rgba(255, 163, 0, 0.05);
+    overflow: hidden;
+    min-width: 0;
 }
 
 .reading-card:hover {
@@ -245,9 +247,12 @@ section h3 {
     font-size: 8px;
     color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     margin-bottom: 8px;
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .reading-value {
@@ -256,6 +261,9 @@ section h3 {
     color: var(--primary-color);
     font-family: 'Orbitron', monospace;
     text-shadow: 0 0 10px var(--glow-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Statistics Section */
@@ -510,11 +518,16 @@ section h3 {
     }
 
     .reading-card {
-        padding: 12px;
+        padding: 10px 6px;
     }
 
     .reading-value {
-        font-size: 24px;
+        font-size: 22px;
+    }
+
+    .reading-label {
+        font-size: 7px;
+        letter-spacing: 0.5px;
     }
 }
 
